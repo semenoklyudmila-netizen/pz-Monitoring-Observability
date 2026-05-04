@@ -1,0 +1,28 @@
+route:
+  receiver: 'mqtt'
+receivers:
+name: 'mqtt' webhook_configs:
+url: 'http://alert-mqtt:5000/alert' EOF
+mkdir -p monitoring/grafana/provisioning/datasources
+cat > monitoring/grafana/provisioning/datasources/datasource.yml <<'EOF'
+apiVersion: 1
+datasources:
+name: Prometheus type: prometheus access: proxy url: http://prometheus:9090 isDefault: true EOF
+cat > README.md <<'EOF'
+un:
+docker compose up -d
+Services:
+web: http://localhost:3000
+webapi: http://localhost:3001
+prometheus: http://localhost:9090
+grafana: http://localhost:3002
+mqtt broker: localhost:1883
+alert manager: http://localhost:9093
+Test:
+curl http://localhost:3001/health
+curl http://localhost:3001/metrics
+docker stop -> check alerts published to MQTT topic alerts/service-status EOF
+( cd services/webapi && npm install )
+( cd services/web && npm install )
+( cd monitoring/alert-mqtt && npm install )
+echo "Files created. Run: docker compose up -d  (then check http://localhost:3001/health and http://localhost:9090)"

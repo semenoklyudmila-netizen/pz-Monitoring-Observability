@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  web:
+    build: ./services/web
+    ports:
+      - "3000:3000"
+    depends_on:
+      - webapi
+    restart: unless-stopped
+
+  webapi:
+    build: ./services/webapi
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+
+  mqtt:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./services/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped
+
+  zabbix-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: zabbix_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    restart: unless-stopped
+
+  zabbix-server:
+    image: zabbix/zabbix-server-mysql:latest
+    environment:
+      DB_SERVER_HOST: zabbix-db
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: zabbix_pass
+    depends_on:
+      - zabbix-db
+    ports:
+      - "10051:10051"
+    restart: unless-stopped
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-mysql:latest
+    environment:
+      DB_SERVER_HOST: zabbix-db
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: zabbix_pass
+      ZBX_SERVER_HOST: zabbix-server
+      PHP_TZ: Europe/Kyiv
+    ports:
+      - "8080:8080"
+    depends_on:
+      - zabbix-server
+    restart: unless-stopped
